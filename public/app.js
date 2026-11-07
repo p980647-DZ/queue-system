@@ -116,7 +116,7 @@
         b.className = 'btn secondary';
         b.style.marginTop = '12px';
         b.textContent = '重新取號';
-        b.onclick = () => { history.replaceState(null, '', '/'); ticketId = null; lastStatus = null; b.remove(); refresh(); };
+        b.onclick = () => { history.replaceState(null, '', '/'); ticketId = null; lastStatus = null; b.remove(); refresh().then(connectLive); };
         card.appendChild(b);
       }
     }
@@ -183,7 +183,8 @@
         ticketId = null;
         history.replaceState(null, '', '/');
         toast('找不到號碼牌，請重新取號');
-        return refresh();
+        await refresh();
+        return connectLive();
       }
       $('conn').textContent = '⚠️ 連線中斷，重新連線中…';
     }
@@ -204,6 +205,7 @@
       const t = await api('/api/tickets', { method: 'POST', body: { existingId: store.get() } });
       setTicket(t.id);
       renderTicket(t);
+      connectLive();
     } catch (err) {
       toast(err.message);
     } finally {
@@ -255,17 +257,39 @@
     }
   };
 
-  // ----- Live updates -----
-  function connectEvents() {
-    if (!window.EventSource) return;
-    const es = new EventSource('/api/events');
-    let timer = null;
-    es.onmessage = () => { clearTimeout(timer); timer = setTimeout(refresh, 150); };
-    es.onopen = () => { $('conn').textContent = ''; };
-    es.onerror = () => { $('conn').textContent = '⚠️ 連線中斷，重新連線中…'; };
+  // ----- Live updates (WebSocket, auto-reconnect) -----
+  let ws = null;
+  let wsFor = null;
+  let retry = 1000;
+  function onLive(msg) {
+    if (msg.type === 'ticket' && ticketId && msg.data.id === ticketId) renderTicket(msg.data);
+    else if (msg.type === 'config' && !ticketId) {
+      config = msg.data;
+      $('booth').textContent = config.boothName;
+      document.querySelectorAll('.n-ahead').forEach((el) => (el.textContent = config.notifyAhead));
+      renderTake();
+    } else if (msg.type === 'gone') refresh();
   }
-  setInterval(refresh, 20000); // fallback polling
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+  function connectLive() {
+    const target = ticketId || '';
+    if (ws && wsFor === target && ws.readyState <= 1) return;
+    if (ws) { ws.onclose = null; ws.close(); }
+    wsFor = target;
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/api/ws${target ? '?t=' + encodeURIComponent(target) : ''}`);
+    ws.onopen = () => { retry = 1000; $('conn').textContent = ''; };
+    ws.onmessage = (e) => { if (e.data !== 'pong') try { onLive(JSON.parse(e.data)); } catch (err) {} };
+    ws.onclose = () => {
+      $('conn').textContent = '⚠️ 連線中斷，重新連線中…';
+      setTimeout(connectLive, retry);
+      retry = Math.min(retry * 2, 30000);
+    };
+  }
+  setInterval(() => { if (ws && ws.readyState === 1) ws.send('ping'); }, 50000);
+  setInterval(() => { if (!ws || ws.readyState !== 1) refresh(); }, 60000); // fallback
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { refresh(); connectLive(); }
+  });
 
   // ----- Boot -----
   (async function init() {
@@ -277,6 +301,6 @@
     if (id) setTicket(id);
     try { config = await api('/api/config'); } catch (e) {}
     await refresh();
-    connectEvents();
+    connectLive();
   })();
 })();

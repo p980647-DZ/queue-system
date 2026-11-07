@@ -23,6 +23,16 @@
   <div class="wrap">
     <h1>攤主叫號台</h1>
 
+    <section id="setup" class="card hidden">
+      <h2>第一次使用：設定攤主密碼</h2>
+      <p class="muted">之後用這組密碼登入叫號台。請設定至少 6 碼、不容易猜到的密碼。</p>
+      <form id="setup-form">
+        <input id="setup-pin" type="password" autocomplete="new-password" placeholder="新密碼" required minlength="4" />
+        <input id="setup-pin2" type="password" autocomplete="new-password" placeholder="再輸入一次" required minlength="4" style="margin-top:8px" />
+        <button class="btn" style="margin-top:10px">設定並登入</button>
+      </form>
+    </section>
+
     <section id="login" class="card hidden">
       <h2>請輸入攤主密碼</h2>
       <form id="login-form">
@@ -60,8 +70,12 @@
         <details>
           <summary>⚙️ 設定與 QR code</summary>
           <div style="margin-top:12px">
-            <a class="btn secondary" href="/poster" target="_blank">🖨 開啟 QR code 海報</a>
-            <p class="muted">來賓網址：<span id="guest-url"></span></p>
+            <div class="center">
+              <div id="admin-qr" style="width:200px;margin:0 auto"></div>
+              <p class="muted">來賓網址：<span id="guest-url"></span></p>
+            </div>
+            <a class="btn secondary" href="/poster" target="_blank">🖨 開啟 QR code 海報（可列印／截圖）</a>
+            <div style="height:12px"></div>
             <label class="field">攤位名稱<input id="set-name" maxlength="40" /></label>
             <label class="field">剩幾組時提醒來賓返回<input id="set-ahead" type="number" min="0" max="50" /></label>
             <label class="field">每組平均處理時間（分鐘）<input id="set-avg" type="number" min="0" max="120" step="0.5" /></label>
@@ -69,6 +83,9 @@
               <button class="btn" id="btn-save">儲存設定</button>
               <button class="btn warn" id="btn-pause">暫停取號</button>
             </div>
+            <hr style="border:0;border-top:1px solid #f3e3dc;margin:16px 0" />
+            <label class="field">修改攤主密碼<input id="set-pin" type="password" autocomplete="new-password" placeholder="新密碼（至少 4 碼）" /></label>
+            <button class="btn ghost" id="btn-pin">更新密碼</button>
             <hr style="border:0;border-top:1px solid #f3e3dc;margin:16px 0" />
             <div class="row">
               <button class="btn ghost" id="btn-logout">登出</button>
@@ -79,6 +96,7 @@
       </div>
     </section>
   </div>
+  <script src="/vendor/qrcode.js"></script>
   <script src="/admin.js"></script>
 </body>
 </html>

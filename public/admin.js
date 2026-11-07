@@ -21,14 +21,16 @@
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    if (res.status === 401) { showLogin(); throw new Error('密碼錯誤'); }
+    if (res.status === 401) { pin = ''; try { localStorage.removeItem(PIN_KEY); } catch (e) {} showLogin(); throw new Error('密碼錯誤'); }
     if (!res.ok) throw new Error(data.error || '操作失敗');
     return data;
   }
 
   function showLogin() {
+    $('setup').classList.add('hidden');
     $('login').classList.remove('hidden');
     $('panel').classList.add('hidden');
+    if (ws) { ws.onclose = null; ws.close(); ws = null; }
   }
 
   const fmtTime = (ms) => (ms ? new Date(ms).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '');
@@ -60,6 +62,7 @@
   function render(s) {
     state = s;
     $('login').classList.add('hidden');
+    $('setup').classList.add('hidden');
     $('panel').classList.remove('hidden');
     $('booth-name').textContent = s.boothName;
     $('now-serving').textContent = s.nowServing || '—';
@@ -71,7 +74,7 @@
     $('btn-call-next').textContent = waiting.length ? `📣 叫下一號（${waiting[0].number} 號）` : '目前沒有等待的來賓';
     $('paused-msg').classList.toggle('hidden', !s.paused);
     $('btn-pause').textContent = s.paused ? '恢復取號' : '暫停取號';
-    $('guest-url').textContent = s.guestUrl;
+    $('guest-url').textContent = guestUrl;
 
     fill('list-called', s.tickets.filter((t) => t.status === 'called').sort((a, b) => b.calledAt - a.calledAt), [
       ['✅ 完成', 'done', 'ok'],
@@ -92,10 +95,76 @@
     }
   }
 
-  async function load() {
-    if (!pin) return showLogin();
-    try { render(await api('/state')); } catch (e) { if (e.message !== '密碼錯誤') toast(e.message); }
+  const guestUrl = location.origin + '/';
+  function drawQr() {
+    if (!window.qrcode || $('admin-qr').innerHTML) return;
+    const qr = qrcode(0, 'M');
+    qr.addData(guestUrl);
+    qr.make();
+    $('admin-qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
   }
+
+  async function load() {
+    if (!pin) {
+      const st = await fetch('/api/admin/status').then((r) => r.json()).catch(() => ({ pinConfigured: true }));
+      if (!st.pinConfigured) {
+        $('setup').classList.remove('hidden');
+        $('login').classList.add('hidden');
+        return;
+      }
+      return showLogin();
+    }
+    try {
+      render(await api('/state'));
+      drawQr();
+      connectLive();
+    } catch (e) { if (e.message !== '密碼錯誤') toast(e.message); }
+  }
+
+  // ----- live updates over WebSocket -----
+  let ws = null;
+  let retry = 1000;
+  function connectLive() {
+    if (ws && ws.readyState <= 1) return;
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/api/ws?role=admin&pin=${encodeURIComponent(pin)}`);
+    ws.onopen = () => { retry = 1000; };
+    ws.onmessage = (e) => {
+      if (e.data === 'pong') return;
+      try { const m = JSON.parse(e.data); if (m.type === 'admin') render(m.data); } catch (err) {}
+    };
+    ws.onclose = () => { ws = null; if (pin) setTimeout(connectLive, retry); retry = Math.min(retry * 2, 30000); };
+  }
+  setInterval(() => { if (ws && ws.readyState === 1) ws.send('ping'); }, 50000);
+  setInterval(() => { if (pin && (!ws || ws.readyState !== 1)) load(); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && pin) load(); });
+
+  $('setup-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const a = $('setup-pin').value;
+    if (a !== $('setup-pin2').value) return toast('兩次輸入的密碼不一樣');
+    const res = await fetch('/api/admin/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: a }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(data.error || '設定失敗'); return load(); }
+    pin = a;
+    try { localStorage.setItem(PIN_KEY, pin); } catch (err) {}
+    toast('密碼設定完成 ✅');
+    load();
+  };
+
+  $('btn-pin').onclick = async () => {
+    const np = $('set-pin').value;
+    if (np.length < 4) return toast('密碼至少 4 個字元');
+    try {
+      await api('/settings', { newPin: np });
+      pin = np;
+      try { localStorage.setItem(PIN_KEY, pin); } catch (err) {}
+      $('set-pin').value = '';
+      if (ws) { ws.onclose = null; ws.close(); ws = null; }
+      connectLive();
+      toast('密碼已更新');
+    } catch (e) { toast(e.message); }
+  };
 
   async function act(t, action) {
     try {
@@ -109,8 +178,9 @@
     e.preventDefault();
     pin = $('pin').value;
     try {
-      render(await api('/state'));
+      await api('/state');
       try { localStorage.setItem(PIN_KEY, pin); } catch (err) {}
+      load();
     } catch (err) { toast(err.message); }
   };
 
@@ -146,15 +216,10 @@
 
   $('btn-logout').onclick = () => {
     pin = '';
+    if (ws) { ws.onclose = null; ws.close(); ws = null; }
     try { localStorage.removeItem(PIN_KEY); } catch (e) {}
     showLogin();
   };
 
-  if (window.EventSource) {
-    const es = new EventSource('/api/events');
-    let timer = null;
-    es.onmessage = () => { clearTimeout(timer); timer = setTimeout(load, 150); };
-  }
-  setInterval(load, 15000);
   load();
 })();

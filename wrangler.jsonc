@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Cloudflare 後台的 Worker 名稱必須跟這裡一樣
+  "name": "queue-system",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "QUEUE", "class_name": "QueueDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["QueueDO"] }],
+  "observability": { "enabled": true }
+}

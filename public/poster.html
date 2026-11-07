@@ -10,7 +10,7 @@
     .poster h1 { font-size: 2.4rem; margin: 0 0 4px; }
     .poster .sub { font-size: 1.3rem; font-weight: 700; color: var(--accent-dark); margin: 0 0 18px; }
     .qr { background: #fff; border: 3px solid var(--accent); border-radius: 22px; padding: 18px; display: inline-block; }
-    .qr img { width: min(72vw, 340px); height: auto; display: block; }
+    #qr { width: min(72vw, 340px); } #qr svg { display: block; width: 100%; height: auto; }
     .poster ol.rules { text-align: left; font-size: 1.15rem; font-weight: 700; }
     .print { margin: 16px auto; max-width: 240px; }
     @media print { .print { display: none; } body { background: #fff; } }
@@ -20,7 +20,7 @@
   <div class="poster">
     <h1 id="booth">電子叫號</h1>
     <p class="sub">付款後掃描 QR code 取號</p>
-    <div class="qr"><img src="/api/qr.svg" alt="取號 QR code" /></div>
+    <div class="qr"><div id="qr" role="img" aria-label="取號 QR code"></div></div>
     <div class="card" style="margin-top:20px">
       <h2>電子叫號排隊規則</h2>
       <ol class="rules">
@@ -33,7 +33,12 @@
     </div>
     <button class="btn print" onclick="window.print()">🖨 列印</button>
   </div>
+  <script src="/vendor/qrcode.js"></script>
   <script>
+    const qr = qrcode(0, 'M');
+    qr.addData(location.origin + '/');
+    qr.make();
+    document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
     fetch('/api/config').then((r) => r.json()).then((c) => {
       document.getElementById('booth').textContent = c.boothName;
       document.title = c.boothName + ' - QR code';

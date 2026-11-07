@@ -1,54 +1,75 @@
-# 攤位電子叫號系統
+# 攤位電子叫號系統（Cloudflare Workers 免費版）
 
-給市集／展場攤位用的線上叫號系統：
+給市集／展場攤位用的線上叫號系統。**不需要電腦主機**：程式跑在 Cloudflare 的免費雲端上，24 小時在線、不會休眠，排隊資料也不會不見。攤主只要一支手機就能叫號。
 
 - 來賓**付款後掃 QR code 取號**，就可以先離開去逛
-- 網頁即時顯示「目前叫號／前面還有幾組／預估等待時間」
-- **剩 3 組時**手機跳出「快輪到你了」的提醒（組數可以調整）
-- 攤主在手機上按「叫下一號」，**被叫到的來賓手機會跳出推播通知**
+- 來賓頁面即時顯示「目前叫號／前面還有幾組／預估等待時間」
+- **剩 3 組時**，手機跳出「快輪到你了」的提醒（組數可以調整）
+- 攤主按「叫下一號」，**被叫到的來賓手機會跳出推播通知**
 - 過號、再叫一次、排回隊伍、完成都可以操作
-
-## 頁面
 
 | 網址 | 用途 |
 |---|---|
-| `/` | 來賓頁：取號、看排隊進度、開啟通知 |
-| `/admin` | 攤主叫號台（要輸入密碼） |
-| `/poster` | QR code ＋排隊規則海報，可以直接列印擺在攤位上 |
+| `/` | 來賓頁：取號、看進度、開啟通知 |
+| `/admin` | 攤主叫號台（第一次打開時設定密碼） |
+| `/poster` | QR code 加排隊規則的海報，可以列印或截圖 |
 
-## 啟動
+---
 
-```bash
-npm install
-ADMIN_PIN=你的密碼 BOOTH_NAME="我的攤位" npm start
-```
+## 只用手機部署（大約 10 分鐘，完全免費）
 
-### 環境變數
+全程用手機瀏覽器就能完成。如果畫面太擠，可以在瀏覽器選單打開「要求電腦版網站」。
 
-| 變數 | 說明 | 預設值 |
-|---|---|---|
-| `ADMIN_PIN` | 攤主登入密碼 | `1234`（一定要改） |
-| `BOOTH_NAME` | 攤位名稱（之後也可以在叫號台修改） | `攤位叫號` |
-| `PORT` | 伺服器埠號 | `3000` |
-| `BASE_URL` | QR code 指向的網址，例如 `https://queue.example.com` | 從連線自動判斷 |
-| `DATA_DIR` | 資料存放的資料夾 | `./data` |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | 推播金鑰。沒設定的話，第一次啟動會自動產生並存到 `data/vapid.json` | — |
+1. 到 **dash.cloudflare.com** 註冊免費帳號，不用信用卡。
+2. 左側選單點 **Workers 和 Pages** → **建立應用程式（Create）** → **匯入存放庫（Import a repository）**。
+3. 點 **連接 GitHub（Connect GitHub）**，授權 Cloudflare 讀取 `queue-system` 這個 repo。
+4. 選擇 `queue-system` repo，設定：
+   - **專案名稱：`queue-system`**（一定要跟 `wrangler.jsonc` 裡的 `name` 一樣）
+   - **部署指令**：`npx wrangler deploy`（預設值，不用改）
+   - **分支**：選放程式碼的分支（例如 `main`）
+5. 按 **部署（Deploy）**，等 1～2 分鐘。完成後會拿到網址，例如
+   `https://queue-system.你的帳號.workers.dev`
+6. 用手機打開 `https://…workers.dev/admin`，**設定攤主密碼**（第一次打開時才會出現）。
+   ⚠️ 部署完成後請**馬上設定**，避免被別人搶先。
+7. 在叫號台的「⚙️ 設定與 QR code」裡改攤位名稱，再打開海報頁列印或截圖。完成！
 
-> ⚠️ **推播通知一定要用 HTTPS**（localhost 例外）。請部署到有 HTTPS 的主機，例如 Render、Railway、Fly.io 或自己的 VPS 加反向代理。`data/` 資料夾要放在會保留的磁碟上，不然重新部署後號碼和推播金鑰都會不見。
+之後只要 GitHub 上的程式碼有更新，Cloudflare 就會自動重新部署，排隊資料會保留。
+
+### 不需要設定的東西
+- **推播金鑰**：第一次啟動時會自動產生，並永久保存在 Cloudflare 上。
+- **資料庫**：用 Cloudflare Durable Objects 儲存，免費方案就有。
+
+### 忘記密碼怎麼辦
+到 Cloudflare 後台 → 你的 Worker → **設定（Settings）** → **變數和密碼（Variables and Secrets）**，新增一個 **Secret**：名稱填 `ADMIN_PIN`，值填新密碼。設定之後就固定用這組密碼登入，叫號台裡的「修改密碼」功能會停用。
+
+### 免費額度夠用嗎？
+即時更新用的是 WebSocket，每筆變更直接推給所有手機，不需要一直重新整理，所以很省流量。一般攤位一天幾百組來賓，遠低於免費額度（每天 10 萬次請求）。
+
+---
 
 ## 手機通知支援
 
 | 裝置 | 怎麼收到通知 |
 |---|---|
-| Android（Chrome、Edge、Samsung 瀏覽器） | 按「開啟通知」，鎖定螢幕或關掉瀏覽器也收得到 |
-| iPhone / iPad（iOS 16.4 以上） | 先用 Safari「分享 → 加入主畫面」，從主畫面打開後再按「開啟通知」（頁面上有教學）。加入主畫面後會直接打開自己的號碼牌 |
-| 不支援推播的瀏覽器 | 頁面開著的時候，叫到號會有聲音＋震動提醒，也會即時更新 |
+| Android（Chrome、Edge、Samsung 瀏覽器） | 按「開啟通知」，鎖定螢幕也收得到 |
+| iPhone / iPad（iOS 16.4 以上） | 先用 **Safari**「分享 → 加入主畫面」，從主畫面打開後再按「開啟通知」 |
+| 其他瀏覽器 | 頁面開著時，叫到號會有聲音和震動，畫面也會即時更新 |
 
-攤主叫號時，畫面會顯示對方有沒有開啟通知（🔔 / 🔕），沒開通知的來賓可以改用現場喊號。
+攤主叫號台上，有開通知的號碼會顯示 🔔，沒開的顯示 🔕，沒開的可以改用現場喊號。
 
-## 運作方式
+**小提醒**：很多人會用 LINE 或 IG 掃 QR code，App 內建的瀏覽器收不到通知。請提醒來賓點右上角，選「用瀏覽器開啟」。
 
-- Node.js + Express，資料存成 JSON 檔（`data/state.json`）
-- 用 Web Push（VAPID）推播通知，所以不用 LINE 或簡訊費用
-- 用 Server-Sent Events 即時更新畫面，另外每 20 秒輪詢一次當作備援
-- 同一支手機重新整理不會重複取號，號碼牌 ID 會存在網址和 localStorage
+---
+
+## 給開發者
+
+```bash
+npm install
+npm run dev      # 本機測試：http://localhost:8787
+npm run deploy   # 用 wrangler 直接部署
+```
+
+- `src/index.js`：Worker 和 Durable Object（排隊邏輯、管理 API、WebSocket 廣播）
+- `src/webpush.js`：只用 WebCrypto 寫成的 Web Push 加密（RFC 8291）和 VAPID 簽章（RFC 8292）
+- `public/`：前端頁面，由 Cloudflare 靜態資產直接提供
+- 選用的環境變數：`ADMIN_PIN`（固定密碼）、`BOOTH_NAME`（第一次啟動時的攤位名稱）、`VAPID_SUBJECT`

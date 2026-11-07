@@ -12,6 +12,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+html { background: var(--bg2); }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   color: var(--text);
