@@ -1,0 +1,27 @@
+{
+  "name": "queue-system",
+  "version": "1.0.0",
+  "description": "攤位線上電子叫號系統（QR code 取號 + 手機推播通知）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/p980647-DZ/queue-system.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/p980647-DZ/queue-system/issues"
+  },
+  "homepage": "https://github.com/p980647-DZ/queue-system#readme",
+  "dependencies": {
+    "express": "^4.22.3",
+    "qrcode": "^1.5.4",
+    "web-push": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
