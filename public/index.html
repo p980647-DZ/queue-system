@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ee6f57" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="叫號" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link id="manifest" rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>電子叫號</title>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="booth">電子叫號</h1>
+
+    <!-- 尚未取號 -->
+    <section id="take" class="hidden">
+      <div class="card center">
+        <div class="label">目前叫號</div>
+        <div class="big-number" id="take-serving">—</div>
+        <p class="muted">目前等待 <b id="take-waiting">0</b> 組，預估約 <b id="take-eta">0</b> 分鐘</p>
+        <button class="btn" id="btn-take">領取號碼牌</button>
+        <p class="muted hidden" id="take-paused"></p>
+      </div>
+      <div class="card">
+        <h2>電子叫號排隊規則</h2>
+        <ol class="rules">
+          <li>攤位排隊取貨／選購／結帳</li>
+          <li>付款後掃描 QR code 取號，確認簽名／拍立得／合照順序</li>
+          <li>按照網頁顯示的時間，等待人數剩 <em>「<span class="n-ahead">3</span> 組」</em>的時候，返回現場排隊</li>
+          <li>回到現場請出示頁面號碼</li>
+          <li>過號請直接回來現場，找小幫手安排</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 已取號 -->
+    <section id="ticket" class="hidden">
+      <div class="card center" id="ticket-card">
+        <div class="label" id="ticket-title">你的號碼</div>
+        <div class="big-number" id="my-number">—</div>
+        <span class="badge" id="status-badge">等待中</span>
+        <p id="status-msg" style="font-size:1.05rem;font-weight:700;margin:12px 0 0"></p>
+      </div>
+
+      <div class="card" id="stats-card">
+        <div class="stats">
+          <div class="stat"><span class="label">目前叫號</span><b id="now-serving">—</b></div>
+          <div class="stat"><span class="label">前面還有</span><b><span id="ahead">0</span> 組</b></div>
+          <div class="stat"><span class="label">預估等待</span><b><span id="eta">0</span> 分</b></div>
+        </div>
+      </div>
+
+      <div class="card" id="notify-card">
+        <h2>🔔 叫號通知</h2>
+        <p class="muted" id="notify-msg">開啟通知後，即使離開攤位、手機鎖定，輪到你時也會跳出通知。</p>
+        <button class="btn" id="btn-notify">開啟通知</button>
+        <div id="ios-hint" class="hidden">
+          <p class="muted" style="margin-bottom:0">
+            iPhone 需要先把此頁面<b>加入主畫面</b>才能收到通知：<br />
+            ① 點 Safari 下方的「分享」按鈕 <span aria-hidden="true">⬆️</span><br />
+            ② 選擇「加入主畫面」<br />
+            ③ 從主畫面打開「叫號」，再按「開啟通知」
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="muted" style="margin-top:0">⚠️ 請勿清除瀏覽器資料。建議將此頁<b>加入書籤</b>或截圖保存號碼。</p>
+        <button class="btn ghost small" id="btn-cancel">取消排隊</button>
+      </div>
+    </section>
+
+    <p class="muted center" id="conn"></p>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

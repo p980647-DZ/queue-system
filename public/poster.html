@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>叫號 QR code 海報</title>
+  <style>
+    .poster { max-width: 640px; margin: 0 auto; padding: 24px 16px; text-align: center; }
+    .poster h1 { font-size: 2.4rem; margin: 0 0 4px; }
+    .poster .sub { font-size: 1.3rem; font-weight: 700; color: var(--accent-dark); margin: 0 0 18px; }
+    .qr { background: #fff; border: 3px solid var(--accent); border-radius: 22px; padding: 18px; display: inline-block; }
+    #qr { width: min(72vw, 340px); } #qr svg { display: block; width: 100%; height: auto; }
+    .poster ol.rules { text-align: left; font-size: 1.15rem; font-weight: 700; }
+    .print { margin: 16px auto; max-width: 240px; }
+    @media print { .print { display: none; } body { background: #fff; } }
+  </style>
+</head>
+<body>
+  <div class="poster">
+    <h1 id="booth">電子叫號</h1>
+    <p class="sub">付款後掃描 QR code 取號</p>
+    <div class="qr"><div id="qr" role="img" aria-label="取號 QR code"></div></div>
+    <div class="card" style="margin-top:20px">
+      <h2>電子叫號排隊規則</h2>
+      <ol class="rules">
+        <li>攤位排隊取貨／選購／結帳</li>
+        <li>付款後掃描 QR code 取號，確認簽名／拍立得／合照順序</li>
+        <li>按照網頁顯示的時間，等待人數剩 <em>「<span class="n-ahead">3</span> 組」</em>的時候，返回現場排隊</li>
+        <li>回到現場請出示頁面號碼</li>
+        <li>過號請直接回來現場，找小幫手安排</li>
+      </ol>
+    </div>
+    <button class="btn print" onclick="window.print()">🖨 列印</button>
+  </div>
+  <script src="/vendor/qrcode.js"></script>
+  <script>
+    const qr = qrcode(0, 'M');
+    qr.addData(location.origin + '/');
+    qr.make();
+    document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+    fetch('/api/config').then((r) => r.json()).then((c) => {
+      document.getElementById('booth').textContent = c.boothName;
+      document.title = c.boothName + ' - QR code';
+      document.querySelectorAll('.n-ahead').forEach((el) => (el.textContent = c.notifyAhead));
+    });
+  </script>
+</body>
+</html>

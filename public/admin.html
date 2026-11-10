@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ee6f57" />
+  <meta name="robots" content="noindex" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>攤主叫號台</title>
+  <style>
+    .ticket-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f3e3dc; flex-wrap: wrap; }
+    .ticket-row:last-child { border-bottom: 0; }
+    .ticket-row .num { font-size: 1.5rem; font-weight: 800; min-width: 3.2em; }
+    .ticket-row .info { flex: 1; min-width: 6em; font-size: 0.85rem; color: var(--muted); }
+    .ticket-row .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .call-btn { font-size: 1.5rem; padding: 22px; }
+    .section-title { display: flex; justify-content: space-between; align-items: center; }
+    details summary { cursor: pointer; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>攤主叫號台</h1>
+
+    <section id="setup" class="card hidden">
+      <h2>第一次使用：設定攤主密碼</h2>
+      <p class="muted">之後用這組密碼登入叫號台。請設定至少 6 碼、不容易猜到的密碼。</p>
+      <form id="setup-form">
+        <input id="setup-pin" type="password" autocomplete="new-password" placeholder="新密碼" required minlength="4" />
+        <input id="setup-pin2" type="password" autocomplete="new-password" placeholder="再輸入一次" required minlength="4" style="margin-top:8px" />
+        <button class="btn" style="margin-top:10px">設定並登入</button>
+      </form>
+    </section>
+
+    <section id="login" class="card hidden">
+      <h2>請輸入攤主密碼</h2>
+      <form id="login-form">
+        <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="密碼" required />
+        <button class="btn" style="margin-top:10px">登入</button>
+      </form>
+    </section>
+
+    <section id="panel" class="hidden">
+      <div class="card center">
+        <div class="label" id="booth-name"></div>
+        <div class="label">目前叫號</div>
+        <div class="big-number" id="now-serving">—</div>
+        <p class="muted" style="margin-top:0">等待中 <b id="waiting-count">0</b> 組 · 已完成 <b id="done-count">0</b> 組 · 下一個發出號碼 <b id="next-number">1</b></p>
+        <button class="btn call-btn" id="btn-call-next">📣 叫下一號</button>
+        <p class="muted hidden" id="paused-msg" style="color:var(--accent-dark)">⏸ 目前暫停取號中</p>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><h2>已叫號 / 現場處理中</h2></div>
+        <div id="list-called"><p class="muted">無</p></div>
+      </div>
+
+      <div class="card">
+        <h2>等待中</h2>
+        <div id="list-waiting"><p class="muted">無</p></div>
+      </div>
+
+      <div class="card">
+        <h2>過號</h2>
+        <div id="list-skipped"><p class="muted">無</p></div>
+      </div>
+
+      <div class="card">
+        <details>
+          <summary>⚙️ 設定與 QR code</summary>
+          <div style="margin-top:12px">
+            <div class="center">
+              <div id="admin-qr" style="width:200px;margin:0 auto"></div>
+              <p class="muted">來賓網址：<span id="guest-url"></span></p>
+            </div>
+            <a class="btn secondary" href="/poster" target="_blank">🖨 開啟 QR code 海報（可列印／截圖）</a>
+            <div style="height:12px"></div>
+            <label class="field">攤位名稱<input id="set-name" maxlength="40" /></label>
+            <label class="field">剩幾組時提醒來賓返回<input id="set-ahead" type="number" min="0" max="50" /></label>
+            <label class="field">每組平均處理時間（分鐘）<input id="set-avg" type="number" min="0" max="120" step="0.5" /></label>
+            <div class="row">
+              <button class="btn" id="btn-save">儲存設定</button>
+              <button class="btn warn" id="btn-pause">暫停取號</button>
+            </div>
+            <hr style="border:0;border-top:1px solid #f3e3dc;margin:16px 0" />
+            <label class="field">修改攤主密碼<input id="set-pin" type="password" autocomplete="new-password" placeholder="新密碼（至少 4 碼）" /></label>
+            <button class="btn ghost" id="btn-pin">更新密碼</button>
+            <hr style="border:0;border-top:1px solid #f3e3dc;margin:16px 0" />
+            <div class="row">
+              <button class="btn ghost" id="btn-logout">登出</button>
+              <button class="btn ghost" id="btn-reset" style="color:#b00">清空所有號碼（重置）</button>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+  <script src="/vendor/qrcode.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>
